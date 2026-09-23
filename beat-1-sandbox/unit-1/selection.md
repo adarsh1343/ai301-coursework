@@ -13,25 +13,21 @@ wrong label is not graded.
 
 ## Selected issue
 
-**Issue link**
-
-[The individual Path Review issue page. A link to the repository or the issue list
-does not satisfy this field.]
+"https://github.com/codepath/pathreview-ai301-fa26-s1/issues/73"
 
 **Verdict output**
-
-[Your skill's live-mode output for this issue, pasted verbatim and ending with the
-fenced JSON verdict block. A summary does not satisfy this field.]
-
-**The verdict must record `accept` for this issue.** Choose an issue your own skill
-accepts. If your skill rejects every candidate you try, that is a signal about your
-rubric rather than about the issues: revise it and re-run — retries are unlimited and a
-partial re-run costs about $0.20 — or run the skill on different candidates. Output
-recording `reject` for the issue you chose earns no credit for this field.
-
-```
-paste the output here, including the closing JSON block
-```
+{
+   "item": "https://github.com/codepath/pathreview-ai301-fa26-s1/issues/73",
+   "checks": [
+   {"name": "Maintainer alive", "grade": "pass", "evidence": "Last default-branch commit 2026-09-16 by Aburke225 (COLLABORATOR), 7 days before grading"},
+   {"name": "Repo in use", "grade": "pass", "evidence": "2 issues closed since 2026-06-25 (#52 and #43, both 2026-09-16), meeting the threshold of at least 2 in 90 days"},
+   {"name": "Scope fits a newcomer", "grade": "pass", "evidence": "Labeled 'good first issue' + 'docs'; body scopes the change to README.md and .env.example"},
+   {"name": "Nobody else already on it", "grade": "pass", "evidence": "assignees empty, 0 comments, no linked or cross-referenced PRs in the timeline"},
+   {"name": "Comments replied to in the last 30 days", "grade": "pass", "evidence": "Passes trivially: comment count is 0"},
+   {"name": "Familiar issue", "grade": "unclear", "evidence": "scope.md fit profile is still the placeholder '(Write a few sentences here.)' — no familiar stack declared"}
+   ],
+   "verdict": "accept"
+},
 
 ---
 
@@ -41,35 +37,35 @@ Quote source text directly in each field below. Paraphrase does not satisfy them
 
 **Run history**
 
-[The agreement score of each run you did, in order. A single run is a complete answer if
-only one run occurred. **The last score in your list must match the agreement line in the
-`eval-run.txt` you committed** — that file is the record of your final run.]
+9/20
+13/20
+18/20
 
 **Issue analysis**
 
-[One scored issue, identified by id (`issue-01` through `issue-20`; the `calib-`
-issues are not scored). State your rubric's decision, the gold label, and the
-reasoning that produced your rubric's result.]
+grading 1 bundle(s) with rubric.md, model sonnet, 5 worker(s)...
+  issue-04: accept
+
+item      gold    verdict  agree  note
+issue-04  accept  accept   yes
+
+agreement: 1/1 scored items
+
+reasoning: passes all required checks in rubric.md (Maintainer alive, Repo in use, Nobody else already on it, Comments replied to in the last 30 days)
 
 **Check rationale**
 
-[One check from the `rubric.md` uploaded to `tools/issue-select/`, quoted as it is
-currently written, with the reasoning behind its current form.]
+check: | Comments replied to in the last 30 days | Timestamps in the issue comment thread | Every comment from a non-maintainer asking to work on the issue, or asking a clarifying question, received a maintainer reply within 30 days of being posted. Passes trivially if no such comment exists | required |
+
+reason: proves that the maintainers are not the only ones commenting and also that the maintainers are responding on time.
 
 **Trade-offs**
 
-[What the quoted check gives up. Any one of these is a complete answer: an issue whose
-result it changes, a canary you re-ran with `--only`, a case you accept it will miss, or a
-stated reason nothing changed elsewhere. "Nothing changed, and here is how I know" earns
-the point in full when the reason follows.]
+gives up detecting maintainer responsiveness on issues with zero comments. it passes trivially rather than actually testing anything. A newcomer relying on this check alone for a silent issue is really only protected by the separate "Maintainer alive" check, not by this one. I accept that trade-off because requiring engagement history on every issue would reject perfectly good silent-but-fresh issues, which would hurt more than it protects.
 
 ---
 
 ## Selection rationale
-
-Graded on whether all three are answered, in your own words. Not on how good the
-reasoning is, and not on length — a short honest answer to each earns the full marks.
-This is also the basis for the claim comment you write in Unit 2.
 
 **Selection rationale**
 
@@ -82,5 +78,6 @@ This is also the basis for the claim comment you write in Unit 2.
 
 ---
 
-Related paths: `eval-run.txt` in this directory; your skill's files in
-`tools/issue-select/`.
+1. limited time this week, interest in keys and understanding how they work
+2. the verdict correctly identified if the issue had 2 issues closed since 2026-06-25 (#52 and #43, both 2026-09-16), meeting the threshold of at least 2 in 90 days. I weighed the fact that the issue would only take 1-2 hours, which makes it a beginner-friendly issue.
+3. understanding where to find the relevant files, 
