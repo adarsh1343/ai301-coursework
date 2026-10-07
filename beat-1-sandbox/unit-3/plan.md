@@ -66,4 +66,4 @@ Then `make check && make test-unit`, as CONTRIBUTING.md asks, and I will report 
 
 ## Deviations
 
-(Fill in after the build.)
+No deviations.
