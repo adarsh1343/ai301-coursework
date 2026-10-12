@@ -66,4 +66,5 @@ Then `make check && make test-unit`, as CONTRIBUTING.md asks, and I will report 
 
 ## Deviations
 
-No deviations.
+- Approach step 3 did not apply. `git grep -n "llm_provider"` shows the name only at core/config.py:18, where the field is defined, so I could not confirm that `openrouter` is an accepted LLM_PROVIDER value. I left the LLM_PROVIDER comment in .env.example unchanged. The only change is the added OPENROUTER_API_KEY line.
+- I confirmed that OPENROUTER_API_KEY in .env is loaded into Settings().openrouter_api_key (it printed 'your-openrouter-key-here'). I did not run the app or call OpenRouter.
