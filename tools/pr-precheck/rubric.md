@@ -1,69 +1,20 @@
 # Rubric: is this pull request ready to submit?
 
-<!--
-THIS IS THE PART YOU WRITE (fourth week running; this is the rubric's
-final form in the sandbox). Your frame in SKILL.md executes whatever
-checks you define here, via your procedure.md. It ships empty on
-purpose: the judgment is your work.
-
-A filled rubric must contain:
-
-1. At least one row in the checks table. Each row needs all four
-   columns:
-   - Check: a short name (used in the output JSON).
-   - Evidence: exactly what to look at, and where in the package. Name
-     the part (the diff read against the plan's scope, the test
-     evidence read against the plan's test plan, the description read
-     against the diff, the repo-facts block's template asks) or a
-     location from your references/evidence-guide.md. "The PR" is not
-     a source; "the diff's changed files read against the plan's
-     stated boundary" is.
-   - Pass condition: a decision rule about the OUTCOME that someone
-     else could apply and get your answer. Judge the thing itself
-     (does the diff fall inside the plan plus its deviation notes? is
-     the claimed evidence observable?), never the write-up's shape
-     (how long the description is, how many commits there are).
-     Structure-shaped checks are what make graders disagree with
-     themselves.
-   - Weight: `required` (a fail here holds the package) or `preferred`
-     (never changes the verdict).
-
-2. A verdict rule below the table: how the check grades combine into
-   accept (submit) or reject (hold), including how `unclear` is
-   treated. The verdict space is binary. State the `unclear`
-   treatment explicitly: the frame here is YOUR SKILL.md, so a rubric
-   that stays silent is only covered if your frame's grading
-   discipline says what happens (the contract's own default is that
-   an unverifiable claim fails).
-
-Cover what actually gets bad PRs submitted. The failure families the
-lecture named ARE the harness's scoring categories, same names as the
-eval README: silent drift (the diff silently does more or less than
-the posted plan, or the description claims fidelity the diff
-contradicts), not tested (the evidence proves nothing observable, or
-the repo's own checks were never run), unreviewable (debris or
-unrelated hunks bury the change), and standards wall (the repo's
-stated template and disclosure asks are ignored). Your evidence
-guide's four headings map onto these one to one (plan fidelity =
-silent drift, test evidence = not tested, diff quality =
-unreviewable, standards and comms = standards wall), and the category
-floor is scored on exactly these names plus clear accept. A rubric
-that ignores a category will fail the eval packages built around
-that category. And remember the honest-outcome
-rule, fourth week running: a PR that honestly discloses a shortfall
-can be ready; a rubric that equates "less than everything" with
-"hold" fails the set.
--->
+A PR is ready when a maintainer could read it and find that the diff does what the plan said, the description says only what the diff does, the proof of the fix is real output, the change is easy to review, and the repo's stated asks are met. Each check judges the thing itself (the diff, the claim, the pasted output), never the write-up's shape or length. A PR that honestly discloses a shortfall can be ready.
 
 ## Checks
 
 | Check | Evidence | Pass condition | Weight |
 |---|---|---|---|
-|  |  |  |  |
+| Diff stays inside plan | The diff's changed files and hunks, read against the plan's files list, in-scope and not-in-scope statements, approach, and deviation notes. | Every file the diff changes is named by the plan (by path, by folder, or by kind, so "a changelog entry" or "a test" names that file), or is recorded in the plan's deviation notes or disclosed in the description by naming the file and why. Every change the plan's approach commits to appears in the diff, or is recorded as dropped or conditional-and-not-taken. A change inside a named file does what the plan says for that file. A plan step that was conditional passes whichever way it went, if the diff and the description agree on which way. Fail if the diff changes a file or area the plan does not name and nothing records it, if a planned change is missing with no note, or if a deviation note says something the diff contradicts. | required |
+| Description claims match diff | The description's claims about the code (what changed, which files, "no X added", "exactly the plan", tests added, changelog added) and every ticked checklist box, each looked up in the diff. | Each claim about what the code change does or contains has a line in the diff that makes it true. A claim that something was not added is true if nothing in the diff adds it. Claims about what a command printed or how the program behaved (before and after results, check results) are not looked up in the diff; the two test checks grade those. A description with no Changes list, or one that never mentions a changed file (a test file, say), does not fail for that. It fails only when what it leaves out makes something it does say false, such as "only one file changed" or "no changes beyond the plan" next to a hunk the plan does not name. Fail if a claim has no supporting line in the diff (for example, a ticked "tests added" box for a case no test covers, or a changelog entry claimed but absent), or if the diff contradicts a claim. Ticked CI boxes are not graded here. | required |
+| Repro before and after shown | The test evidence (and the description's Testing section), read against the plan's test plan and the repro evidence's commands and outputs. | The issue's own repro is re-run, and the evidence shows both the before and the after: the command or steps run, the symptom seen before (the exact message, value, or behavior the repro evidence reports), and what was seen after, which matches the result the plan said to expect. The observation can be pasted output, a transcript with the result written beside each command (including in a comment), or, for an interactive tool with nothing to print, the keys pressed and the text or behavior seen, with any message quoted. The plan's other test steps (controls, success paths, unchanged behavior) pass if the evidence states their result in a sentence or a test in the diff covers them. Fail if the issue's repro is not re-run, if the before or the after is only a bare claim ("fixed", "works now", "passes") with no observed symptom or result, if the after differs from the plan's expected result with no explanation, if a secondary step is absent with no disclosure, or if the evidence contradicts a claim. A step disclosed as not run, with the reason, passes unless the description claims it passed. | required |
+| Repo checks run and reported | The test evidence and the description's Testing or requirements text, read against the checks the repo-facts block tells contributors to run (test, lint, format, or generate commands in the PR template or contributing guide). | Each check the repo-facts block names is reported by name with its outcome, in the test evidence or the description: for example "cargo test -p ignore passes (214 tests)", "fmt and clippy clean", "go generate produces no cheatsheet diff", "code formatted". Pasting raw output is not required. A check that failed or printed a non-result, reported with the reason, passes. Where the repo asks for tests with behavior changes, a test in the diff plus its reported run counts. Automatic pass if the repo-facts block names no checks and the PR claims none. Fail if the PR says checks passed without saying which ("tests pass", "tested locally"), if a check the repo names is neither reported nor disclosed as not run, or if the reported outcome is contradicted by something in the package. | required |
+| Diff is reviewable | The unified diff and the commit list, hunk by hunk. | Every hunk serves the change the plan and description name, so a reviewer sees the fix and nothing else. Fail if the diff contains debug output left in, commented-out code, TODO or scratch notes, whitespace or formatting changes on lines the fix does not otherwise touch, stray or generated files (including `plan.md`, `pr_draft.md`, `test_evidence.md`, editor files, build output), or renames and refactors the plan does not name. A large hunk the plan names is not debris. Quote the first offending line as evidence. | required |
+| Template and disclosure complete | The PR description, read against the repo's PR template sections and the repo's stated AI-use policy. | Every section the template asks for is present with content that is specific to this change (not the template's placeholder text), and any "N/A" says why. The issue reference (such as "Closes #73") names the issue the plan is for. The Testing section holds the evidence or points to it. If the repo or course asks for an AI-use disclosure, the description says in plain words how AI was used on this change. Fail if a section is missing, empty, or still holds the template's placeholder, if the issue number is missing or wrong, or if a required disclosure is missing. Whether ticked boxes are true is graded under "Description claims match diff". | required |
+| Repo rules and thread followed | `docs/CONTRIBUTING.md`, stated repo policy, and the issue thread's maintainer, collaborator, or owner comments, read against the branch name, PR title, commit messages, and description. | Every other ask the repo states of a PR is met: the branch name format, the title or commit format, separate PRs for unrelated clean-up, removal of expected-failure markers named for the issue, and any claim rule. If a maintainer has stated a direction or constraint on the thread, the PR follows it or the description says why it differs. Automatic pass if the repo states no such asks and the thread has no such comments. Fail if a stated ask is unmet or a maintainer comment is ignored or contradicted. | required |
+| Title names the change | The PR title (the first line of the draft). | A reviewer who reads only the title can tell which file or behavior changes and what the change is. Fail if the title is generic ("fix issue", "update files") or describes something the diff does not do. | preferred |
 
 ## Verdict rule
 
-<!-- State how the grades above combine into accept or reject, and how
-unclear is treated. Example shape (write your own): "accept if every
-required check passes; preferred checks never change the verdict;
-unclear counts as fail." -->
+Accept if every `required` check passes. Reject if any `required` check fails. An `unclear` grade on a `required` check counts as a fail. `preferred` checks never change the verdict. The two automatic-pass cases (no repo checks listed, no other repo asks and no maintainer comments) are passes, not `unclear`. A disclosed shortfall is graded on what it says: a PR that records what it left out or changed, in the plan's deviation notes or in the description, can pass every check that depends on that disclosure. In the summary, quote the evidence for each failed check, and put the most important failed check first.
