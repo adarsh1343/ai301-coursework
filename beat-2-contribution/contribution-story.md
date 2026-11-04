@@ -8,9 +8,8 @@ format criteria grade exactly that. Your course repo link is the whole submissio
 files and no evidence uploads are part of Assignment 5.
 
 **Contribution Number:** [1]
-**Student:** [Student name]
-**GitHub Username:** [your GitHub username, exactly as it appears on your profile - no @, no
-profile URL. Your comments upstream are identified by this name.]
+**Student:** Adarsh Kessani
+**GitHub Username:** adarsh1343
 **Issue:** [GitHub issue link]
 **Pull Request:** [GitHub PR link, once opened]
 
@@ -55,10 +54,9 @@ happened; these entries are the toolkit's own timeline.
 All four entries are graded. Keep every heading below, and fill each
 one in the week it belongs to.
 
-**Unit 5: [one line on the tool work]**
+**Unit 5: Built issue-scout, a search-rank-grade scout for open source issues (2026-11-04)**
 
-[2-4 sentences: what you built (the scout, your strategy), what broke
-or fell short, what changed because of it.]
+I turned my Unit 1 issue-select skill into issue-scout: three `gh search issues` queries written from my fit profile (Python, shell, and CI work; docs and config fixes), ranking filters that drop assigned, stale, long-debate, and frontend issues and sort by fewest comments, and my rubric to grade the top five. My first queries returned 0 results because quoting "docker OR deploy OR ci" made gh search for one exact phrase, and my scans showed the rubric passing brand-new repos: ros-envs#3 (2 days old, one contributor) passed "Repo in use" on a single release, and whyfull#28 (also about 2 days old) passed through the closed-PR route, while Canvas-Web#290 failed "Maintainer alive" even though its maintainer was reviewing PRs. I removed the quotes, made a 30-day minimum repo age apply to both routes of "Repo in use", counted PR reviews as maintainer activity, and fixed my verdict rule, which said "five required checks" when the table had four.
 
 **Unit 6: [one line on the tool work]**
 
