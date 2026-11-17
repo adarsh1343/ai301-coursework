@@ -11,7 +11,7 @@ files and no evidence uploads are part of Assignment 5.
 **Student:** Adarsh Kessani
 **GitHub Username:** adarsh1343
 **Issue:** https://github.com/scikit-hep/pyhf/issues/1250
-**Pull Request:** [GitHub PR link, once opened]
+**Pull Request:** https://github.com/scikit-hep/pyhf/pull/2800
 
 One repository, built across units 5 to 8, telling the whole story of your real
 contribution. Fill it as you work, not at the end — the sections below ask for evidence that
@@ -62,10 +62,9 @@ I turned my Unit 1 issue-select skill into issue-scout: three `gh search issues`
 
 I added an Upstream section (claims, questions, pings) to my voice guide, hooked `check_voice.py` into Claude Code as a PreToolUse hook on Bash, and wrote a 43-line `CLAUDE.local.md` in my pyhf clone covering CONTRIBUTING rules, the layout of `tests/test_validation.py`, and the install that actually works, kept out of my diff with `.git/info/exclude`. The wiring test showed a gap: on Windows, Claude Code's first attempt at `gh issue comment --help` went through its PowerShell tool, which my `"matcher": "Bash"` hook never sees, so the guard only stopped it on the second try, through Bash. The guard then stopped my claim draft twice, once for writing "all 20 pass" without the output and once for a "because" explaining the fixture lookup, and it stopped my repro report for saying "reproduced" when Claude had run the commands, so I quoted the printed output in the claim and re-ran the repro steps myself. The memory file records two install surprises I'd otherwise relearn each session: `.[xmlio]` alone dies on an `iminuit` warning filter, and the conftest needs `jax` even to run one file.
 
-**Unit 7: [one line on the tool work]**
+**Unit 7: Installed the ship-gate and wrote a Windows-aware ship manifest for pyhf (2026-11-16)**
 
-[2-4 sentences: the ship-gate and your gate manifest. What it produced
-on your real branch, what fought you, what changed because of it.]
+My manifest has three rows taken from pyhf's `ci.yml` and `.pre-commit-config.yaml` (the core pytest command, `ruff check` and `ruff format --check`), and on my branch the ship-gate passed all three and then my pr-precheck. Its only notes were three voice problems in my description, including an unsupported "CI runs on Linux and macOS". What fought me was Windows: the gate runs rows in `cmd.exe`, so `.venv/Scripts/ruff` failed with `'.venv' is not recognized` until I switched to backslashes, and CI's own test command already gave `21 failed ... 7 errors` on untouched `main` because of Windows temp paths and git symlinks. I moved `tests/test_scripts.py` and `tests/test_patchset.py` to the second table with the counts and causes, and checking that voice note turned up pyhf's own `ci-windows.yml` skipping `test_scripts.py` too, so I cited it. I didn't change my rubric: none of its checks asked for anything pyhf doesn't.
 
 **Unit 8: [one line on the tool work]**
 
@@ -95,26 +94,28 @@ Claim comment: https://github.com/scikit-hep/pyhf/issues/1250#issuecomment-69241
 
 **Problem Description**
 
-[In your own words, what is broken or missing?]
+Nothing is crashing. What's missing is an explanation. `tests/test_validation.py` checks pyhf's CLs results against reference numbers for 9 model configurations, and to avoid repeating code it builds each configuration out of three fixtures that a single `setup` fixture looks up by name. That keeps the file short, but when a validation test fails, nothing tells you which configuration it was or where its data lives, so you have to read through the file to find out.
 
 **Expected Behavior**
 
-[What should happen?]
+Someone looking at a failing ID like `test_validation[2bin_2channel_couplednorm_mu1]` should be able to get to the fixtures that define it (`source_`, `spec_` and `expected_result_2bin_2channel_couplednorm`) without reading `setup` and working out an f-string. They should also be able to tell what each value in the `setup` parameter list means, and how to add a new configuration.
 
 **Current Behavior**
 
-[What actually happens?]
+On `main` at `4bbcb86`, the file has no module docstring and nothing in `docs/` mentions it. `pytest --setup-plan` lists only `request, reset_backend, reset_events, setup, setup_cuda_environment`, and a forced failure's traceback names only lines 795 (`test_validation`) and 658 (`validate_hypotest`), never the fixture at line 443 that holds the expected value. The IDs don't always match the fixture names either: `1bin_shapesys_q0_mu1_toys` is `1bin_shapesys_q0_toys`, and that one's source and spec are aliases at lines 72 and 107.
 
 **Affected Components**
 
-[Which parts of the codebase are involved?]
+- `tests/test_validation.py`: the 9 fixture trios (lines 13-631), `validate_hypotest` (632), the parametrized `setup` fixture and its `ids` list (661-769), and `test_validation` (771)
+- `validation/data/*.json`: the inputs the `source_*` fixtures load
+- `docs/development.rst`: the "Running with pytest" section, where developers look for test instructions
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: Claude Code in my pyhf clone, with my `CLAUDE.local.md` loaded, used to trace how `setup` reaches the fixtures and to check each fixture name against the `ids` list; plus `grep` and `pytest --setup-plan` myself.
+- What it produced: the ID-to-name-to-fixture map for all 10 test IDs, and one fact my unit 6 notes had wrong: `1bin_shapesys_q0_toys` has no `source_`/`spec_` fixtures of its own, only module-level aliases at lines 72 and 107.
+- Difficulties: my `CLAUDE.local.md` said the `_toys` case only had "an extra `expected_result_..._toys`", which is true but leaves out the aliases, and a walkthrough built from that note would have pointed readers at fixtures that don't exist.
+- What changed: I grepped for `q0_toys` before writing the plan, put the aliases into Understanding the Issue and plan.md, and the walkthrough now has to explain them.
 
 ---
 
@@ -173,93 +174,116 @@ FAILED tests/test_validation.py::test_validation[2bin_2channel_couplednorm_mu1]
 
 **Analysis**
 
-[Your analysis of the root cause: what is causing the issue, traced
-to the files and functions involved.]
+On `main` at `4bbcb86`, all the "hunting down" comes from one place in `tests/test_validation.py`:
+
+- The file defines 9 configurations, each as three module-scoped fixtures named by convention: `source_<name>` (loads `validation/data/*.json`), `spec_<name>` (builds the pyhf model spec from the source) and `expected_result_<name>` (the expected CLs values), in lines 13-631. `1bin_shapesys_q0_toys` has no source or spec fixtures of its own. Lines 72 and 107 alias them to the `q0` ones, and only `expected_result_1bin_shapesys_q0_toys` (line 125) is separate.
+- The `setup` fixture (line 750) is parametrized with 10 tuples `(name, config_counts, mu, test_stat, tolerance, calctype)` (lines 661-749) and a parallel `ids` list. It fetches the trio by string at lines 752-754: `request.getfixturevalue(f"source_{_name}")` and the matching `spec_`/`expected_result_` lines.
+- Because the trio is fetched by string, pytest never sees it as a dependency. `--setup-plan` lists only `request, reset_backend, reset_events, setup, setup_cuda_environment`, and a forced failure's traceback names only line 795 (`test_validation`) and line 658 (the assert in `validate_hypotest`), never the fixture at line 443.
+- The IDs aren't the fixture names (`1bin_shapesys_q0_mu1_toys` is `1bin_shapesys_q0_toys`), so the only way from an ID to a name is to find the ID's position in `ids` and read the tuple at the same position.
+- None of this is written down anywhere: the file has no module docstring, and `grep -rln "test_validation" docs README.rst CONTRIBUTING.md` prints nothing.
+
+So the cause is that the mapping from ID to name to fixture, and what each tuple field means, exist only implicitly in the code.
 
 **Proposed Solution**
 
-[High-level description of your fix approach, and what you are
-deliberately NOT changing.]
+The issue offers "either revise all of it or include some sort of walkthrough of how things work." I asked matthewfeickert which he'd prefer, and he hasn't answered yet. I'm building the walkthrough because it changes no test logic and is easy to replace if he wants a restructure, and the PR goes up as a draft that says so. In scope: a module docstring at the top of `tests/test_validation.py` (the fixture trio convention, the `_toys` aliases, what each `setup` tuple field means, how to get from a failing ID to its fixtures, how to run one case, how to add a configuration); a short "Validation tests" subsection in `docs/development.rst` under "Running with pytest" that points to it; and my name at the bottom of `docs/contributors.rst`, which CONTRIBUTING.md asks of every PR.
+
+Not changing: the fixtures or how `setup` fetches them, any expected value or tolerance, `validate_hypotest` and its assert messages, and the other tests in the file. Failure tracebacks will look the same; the file will explain how to read them.
 
 **Implementation Plan**
 
-1. [Modify file X to do Y]
-2. [Add or change Z]
-3. [Update tests]
+1. Create branch `docs/1250-test-validation-walkthrough` from `main`. CONTRIBUTING.md names no branch format, and the repo's documentation branches use a `docs/` prefix (`docs/use-furo`).
+2. In `tests/test_validation.py`, add the module docstring as the first statement of the file, with lines at most 88 characters (ruff `line-length`). Commit `docs: Add walkthrough docstring to test_validation module`.
+3. In `docs/development.rst`, add the pointer subsection after the `nox` block under "Running with pytest". Commit `docs: Point to test_validation walkthrough in development guide`.
+4. Append `- Adarsh Kessani` to `docs/contributors.rst`. Commit `docs: Add Adarsh Kessani to contributors`.
+5. Run the checks in my ship manifest and the test plan (see Testing Strategy), and save the output in `test_evidence.md`.
 
-[Record deviations here as they happen: what changed mid-build and
-why. A recorded deviation is honest work; silent drift is not.]
+No new test: the change is documentation only and changes no behavior, so there's no failing case for a test to cover. The 20 existing tests in the file must still pass.
+
+Deviations (2026-11-16): the docs addition is a `^^^` "Validation tests" subsection rather than a bare paragraph, to match its sibling "Contrib module matplotlib image tests". My manifest's test row also adds `--ignore tests/test_scripts.py --ignore tests/test_patchset.py`, because both files fail on `main` in my Windows clone (see Testing Strategy). Neither changes what the diff does. On 2026-11-17 I rebased onto upstream `main` at `a19e98a3`, which doesn't touch the three files, so the line numbers above still hold.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: plan-check, run as `claude "plan-check: grade my plan in plan.md and draft comment in plan-comment.md for issue https://github.com/scikit-hep/pyhf/issues/1250"` from my clone.
+- What it produced: accept, with all 8 required checks passing and the preferred one too. It checked my line numbers against the repo and confirmed them ("the value at 451 is `exp[1]`, so the forced failure lands on the assert at 658"). It also flagged that I was breaking my own `CLAUDE.local.md` rule to wait for the maintainer's answer before building, that "I'll build the walkthrough option as a draft PR" broke my voice guide's no-promises rule, that my comment didn't open with matthewfeickert's suggestion, and that two of my claims were unverified.
+- Difficulties: the first run graded nothing. Headless `claude -p` can't answer permission prompts, so it couldn't read `rubric.md` or `procedure.md` in `~/.claude/skills/plan-check/`. It also told me 102 stray `UsersAdarshAppDataLocalTemppytest-of-*` files were in my clone root, left by my own test run.
+- What changed: I reran it with `--add-dir` for the skill folder and read-only tools allowed. Then I rewrote the comment to open with matthewfeickert's "either revise all of it or include some sort of walkthrough", changed "I'll build" to "I'd draft", backed the branch-name claim with real branch names, marked the notebook claim as an assumption, and deleted the stray files before branching. I kept building before an answer, because the PR is a draft and the walkthrough is easy to drop, and the PR description says the question is still open.
 
 ---
 
 ## Testing Strategy
 
-[What observable checks prove the fix: your reproduction steps re-run
-against the built change (before and after), and the repo's own test
-suite or checks with the outcome shown. "Tests pass" with nothing
-observable named is not a strategy.]
+This is a documentation fix, so there's no bug output that goes away. The checks prove three things: the walkthrough now exists and can be found, it's correct about the code, and nothing else changed. Everything below ran on Windows 11 with Python 3.14.7, on branch `docs/1250-test-validation-walkthrough` (`95597859`) against `main` (`4bbcb86`), on 2026-11-16. On 2026-11-17 I rebased onto upstream `main` at `a19e98a3` (branch now `07588f88`) and re-ran steps 1-5, which gave the same output: `20 passed`, the same forced-failure traceback at lines 881 and 744, and `1064 passed, 13 skipped, 2 xfailed` for the core suite.
+
+1. **Repro step 2, before and after.** `grep -rln "test_validation" docs README.rst CONTRIBUTING.md` printed nothing on `main` (exit 1) and printed `docs/development.rst` on the branch. `ast.get_docstring` on the test file printed `None` on `main` and `Validation tests: pyhf results compared with reference results.` on the branch.
+2. **Repro step 5, re-run on the branch.** I made the same forced change to `expected_result_2bin_2channel_couplednorm` (now line 537), and the traceback still named only `test_validation` (881) and `validate_hypotest` (744), with `Obtained: 0.1361302885494818` / `Expected: 0.1461301880753241 ± 1.5e-07`, the same as on `main`. That's what the plan said would happen, since the fixtures aren't restructured. Following the docstring from the ID, `grep -n "def expected_result_2bin_2channel_couplednorm"` found line 529, the fixture I'd changed. After the revert, `git status --short` printed nothing.
+3. **The walkthrough matches the code.** An `ast` script read `setup`'s `params` and `ids` and printed `all 3 fixtures found` for all 10 IDs, including `1bin_shapesys_q0_mu1_toys` through its aliases. The docstring's command `pytest tests/test_validation.py -k 2bin_2channel_couplednorm_mu1 --collect-only -q` printed `1/20 tests collected (19 deselected)`. Its "-2 to +2 sigma" wording matches `return_expected_set` in `src/pyhf/infer/__init__.py` line 67.
+4. **Unchanged behavior.** `pytest tests/test_validation.py -q` printed `20 passed in 24.79s`, the same count as on `main`.
+5. **Repo checks from my ship manifest**, run through `cmd.exe` the way the ship-gate runs them. The test command gave `1064 passed, 13 skipped, 2 xfailed`, the same as on `main`. `ruff check` printed `All checks passed!` and `ruff format --check` printed `155 files already formatted`. Before writing the manifest, I ran CI's own test command on untouched `main` and got `21 failed, 1121 passed, 13 skipped, 2 xfailed, 7 errors`. All of those failures are in `tests/test_scripts.py` (19 `FileNotFoundError`s on temp paths with the backslashes stripped, `'C:UsersAdarshAppDataLocalTemp...'`) and `tests/test_patchset.py` (2 failures and 7 errors, `JSONDecodeError` on fixture JSONs that are git symlinks, which Windows checks out as text). Those two files went in the manifest's second table with the date and the reason, and so did the doctests and the notebook suite.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: my ship manifest's three checks, which I ran through Python's `subprocess.run(cmd, shell=True)`, the same call `check_gate.py` makes, so I'd see exactly what the gate would see. I also ran the repro steps and an `ast` script that checks the docstring against the code.
+- What it produced: before/after pairs for repro steps 2 and 5, `all 3 fixtures found` for all 10 IDs, and a manifest test row that passes with the same `1064 passed` count on `main` and on the branch.
+- Difficulties: on Windows the gate runs rows in `cmd.exe`, not Git Bash, so the assignment's example form `.venv/bin/pytest` doesn't exist here, and even `.venv/Scripts/ruff` failed with `'.venv' is not recognized`. CI's test command also failed on untouched `main` (30 failures and errors), and its failing runs dropped 102 stray files into my clone root.
+- What changed: every manifest row uses `.venv\Scripts\...` with backslashes. I narrowed the test row with two `--ignore`s, recorded both files in the second table with the counts and causes, and wrote both into `test_evidence.md` and the PR description so a maintainer can see what wasn't run and why.
 
 ---
 
 ## Implementation Notes
 
-[A running log, added to as you work. Date each entry. What you
-built, decisions you made when you made them, wrong turns included.]
+**2026-11-16 (setup)**
 
-**[Date]**
+Installed the ship-gate and wrote my manifest. matthewfeickert hadn't answered my walkthrough-vs-restructure question, so I decided to build the walkthrough as a draft PR: it touches no test logic and is easy to drop. My `CLAUDE.local.md` said to wait for an answer first. I decided against waiting because a draft PR is where that question can still be answered, and the PR description says it's open. Before writing the manifest, I ran CI's test command on untouched `main`, which turned up 30 failures and errors in `test_scripts.py` and `test_patchset.py`, all from Windows paths and git symlinks. That's where most of the session went, and it's why those two files sit in the manifest's second table.
 
-[Entry]
+**2026-11-16 (plan)**
 
-**[Date]**
+While checking the `setup` params, I found `"1bin_shapesys_q0_toys"` had no `source_` or `spec_` fixture of its own. Grepping for `q0_toys` showed the module-level aliases at lines 72 and 107. My unit 6 notes only mentioned the extra `expected_result_`, so a walkthrough built from them would have been wrong for that case. plan-check accepted the plan on its second run, and I fixed the voice-guide notes it raised.
 
-[Entry]
+**2026-11-16 (build)**
+
+Made three commits on `docs/1250-test-validation-walkthrough`: the 86-line docstring, the "Validation tests" subsection in `docs/development.rst` (a `^^^` heading to match its sibling, instead of the bare paragraph I'd planned), and my name in `docs/contributors.rst`. I kept every docstring line at 88 characters or less, and swapped the run example from a full test ID (over 88 characters) to `-k 2bin_2channel_couplednorm_mu1`, after checking that it selects exactly 1 of 20 tests. Git warned about LF to CRLF in the working copy, so I checked the committed diff for carriage returns: there were 0.
+
+**2026-11-16 (draft)**
+
+The first draft of my PR description said "I ran every command in Testing myself", which wasn't true: Claude ran them in this session. That's the same mistake my voice guard caught in unit 6. I rewrote the AI-use section to say what actually happened before running the voice guard, which then printed `voice-guard: pass`.
+
+**2026-11-16 (ship-gate)**
+
+I re-ran the Testing commands in my own terminal and updated the AI-use line to say I ran them. My first ship-gate run after that stopped on one test, `test_sbottom_regionB_1400_550_60`, with a `KeyError` from `tarfile`. The diff doesn't touch it, and it passed in every re-run, so I left the manifest as it was, and the next gate run passed. Before opening the PR I fetched upstream: `main` had moved 2 commits past `4bbcb86` (`7953abc1` drops Python 3.10, `a19e98a3` moves the Intel macOS CI to nightly). Neither touches my three files, and both workflow claims in my description still hold.
+
+**2026-11-17 (rebase)**
+
+Rebased the branch onto upstream `main` at `a19e98a3`, as CONTRIBUTING.md step 6 asks. It was clean, and the diff is still `3 files changed, 98 insertions(+)`. Upstream had raised some dependency lower bounds, but my installed scipy 1.18.1, numpy 2.5.5 and iminuit 2.33.0 are all above them, and ruff is still pinned at v0.17.3, so the manifest didn't change. The re-run gave the same output as before the rebase. I also added a `## Deviations` section to `plan.md`, which pr-precheck had flagged as missing, and wrote out the two `python -c "..."` commands in full in `pr_draft.md`, which was its last voice note. The next ship-gate run rejected the branch: "Diff stat lists 15 files; 12 (e.g. pyproject.toml, .github/workflows/ci.yml, noxfile.py) are not named by the plan". The gate compares against my local `main`, which I hadn't updated, so upstream's two commits looked like part of my PR. `git fetch upstream main:main` moved local `main` to `a19e98a3`, and `git diff --stat main...HEAD` went back to `3 files changed, 98 insertions(+)`.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: Claude Code in my pyhf clone (with `CLAUDE.local.md`), which wrote the docstring and the docs subsection from my plan, made the three commits, and ran each check.
+- What it produced: three commits (`8d661238`, `e06b02c1`, `07588f88` after the rebase onto `a19e98a3`; `90a0c906`, `3994cd95`, `95597859` before it), 98 lines added across `tests/test_validation.py`, `docs/development.rst` and `docs/contributors.rst`, and no other files touched.
+- Difficulties: the forced-failure line moved from 451 to 537 once the docstring was in, so the repro step had to be redone with the new number. Claude's first AI-use line overstated what I did myself.
+- What changed: the repro step in `test_evidence.md` names both line numbers, and the AI-use section now says Claude ran the commands. I still need to rewrite that section in my own words before opening the PR.
 
 ---
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when opened]
+**PR Link:** https://github.com/scikit-hep/pyhf/pull/2800 (opened as a draft on 2026-11-17, `docs: Add walkthrough of test_validation fixtures`)
 
-**PR Description:** [what the PR says; much of the content above
-adapts into it]
+**PR Description:** The description follows pyhf's PR template and starts with `Fixes #1250`. It quotes matthewfeickert's "either revise all of it or include some sort of walkthrough" and says my question about which he'd prefer is still unanswered, so the draft does the walkthrough, which is easy to drop if he wants a restructure. It explains that `setup` fetches each configuration's fixtures by string, so `--setup-plan` and tracebacks never name them. The Changes section lists the three files: the 86-line module docstring in `tests/test_validation.py`, the "Validation tests" subsection in `docs/development.rst`, and my name in `docs/contributors.rst`. It also lists what's not changed (fixtures, the `setup` lookup, expected values, `validate_hypotest`). Testing pastes the before and after of the `grep` and `ast.get_docstring` checks, the forced-failure traceback on `main` (795/658) and the branch (881/744), the docstring lookup that finds line 529, the 10-ID fixture check, `20 passed`, and the three repo checks (`1064 passed, 13 skipped, 2 xfailed`, ruff clean). It notes the re-run after rebasing onto `a19e98a3`. It lists what I didn't run and why: `test_scripts.py` and `test_patchset.py` fail on `main` in my Windows clone (with the `git ls-files` mode `120000` evidence), the doctests, and the notebook, contrib and benchmark suites. It ends with an AI-use section and the template checklist, with Assignee marked N/A and the reason.
 
 **Maintainer Feedback:**
 
-- [Date]: [feedback received, or "none yet"; silence is a normal
-  state and costs you nothing]
+- 2026-11-17: none yet (PR just opened as a draft; my question on #1250 is also still unanswered)
 - [Date]: [how you addressed it]
 
-**Status:** [Awaiting review / Iterating / Merged / Closed. The
-status is a fact you record, never a grade: the PR is graded as
-opened.]
+**Status:** Awaiting review (draft PR, opened 2026-11-17)
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: the ship-gate, run by hand as `python3 ~/.claude/ship-gate/check_gate.py --branch --title "docs: Add walkthrough of test_validation fixtures" --body-file pr_draft.md`, which runs my manifest's three checks and then my pr-precheck on the branch, plan, evidence and description.
+- What it produced: `ship-gate: PASS`. The core test suite was ok (148s), ruff lint ok, ruff format ok, and pr-precheck passed all 7 required checks plus the title check, for example "Description claims match diff [pass]: '86 lines, no code changes' matches +86 in test_validation.py". It left three voice notes: my description quoted the docstring's run command with `--collect-only -q` added without saying so, summarized the `ast` check instead of pasting it, and said "CI here runs on Linux and macOS" with nothing behind it.
+- Difficulties: the hook test printed only one stop under headless `claude -p`. The voice guard's log showed it had also fired, but Claude only quoted the ship-gate's message. Getting the manifest to pass at all took most of the session, because on Windows the gate runs rows in `cmd.exe` and CI's own test command fails on `main` here. My own first runs failed for a plainer reason: I started the gate from `codepath` and then from `ai301-unit7-starter`, so it couldn't find `pr_draft.md` and said "is not inside a git clone". It only works from inside the clone. On my second real run it stopped with `1 failed, 1063 passed`: `tests/test_regression.py::test_sbottom_regionB_1400_550_60` hit a `KeyError` from `tarfile`, which my diff doesn't touch. That test then passed alone, with `test_paramviewer.py` (`13 passed`), and in a full run of the same command (`1064 passed`). The archive it reads was intact and hadn't changed since it was first downloaded, so I couldn't find a cause.
+- What changed: I fixed all three voice notes in `pr_draft.md`. Checking the CI claim led me to `.github/workflows/ci-windows.yml`, which runs pytest with `--ignore tests/test_scripts.py`, the same exclusion my manifest makes, so I cited it in the description and in the manifest's reason. I re-ran the Testing commands myself and changed the AI-use line to say so. I kept the regression test in the first table instead of moving it to the second, because it passes on my branch and the second table is for checks that fail on `main`. The next gate run printed `ship-gate: PASS` (core suite ok in 184s, all 7 required pr-precheck checks pass), with one voice note left: two commands shortened to `python -c "..."` in the description.
 
 ---
 
