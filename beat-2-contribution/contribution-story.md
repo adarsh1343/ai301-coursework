@@ -66,10 +66,9 @@ I added an Upstream section (claims, questions, pings) to my voice guide, hooked
 
 My manifest has three rows taken from pyhf's `ci.yml` and `.pre-commit-config.yaml` (the core pytest command, `ruff check` and `ruff format --check`), and on my branch the ship-gate passed all three and then my pr-precheck. Its only notes were three voice problems in my description, including an unsupported "CI runs on Linux and macOS". What fought me was Windows: the gate runs rows in `cmd.exe`, so `.venv/Scripts/ruff` failed with `'.venv' is not recognized` until I switched to backslashes, and CI's own test command already gave `21 failed ... 7 errors` on untouched `main` because of Windows temp paths and git symlinks. I moved `tests/test_scripts.py` and `tests/test_patchset.py` to the second table with the counts and causes, and checking that voice note turned up pyhf's own `ci-windows.yml` skipping `test_scripts.py` too, so I cited it. I didn't change my rubric: none of its checks asked for anything pyhf doesn't.
 
-**Unit 8: [one line on the tool work]**
+**Unit 8: Installed the PR monitor and wrote a playbook from pyhf's real review timing (2026-11-17)**
 
-[2-4 sentences: the PR-monitor and your playbook. What it read, what it
-drafted, what you did with the draft.]
+My playbook's staleness rule comes from six recent merged PRs from outside contributors: each got a first response either within a day (#2720, #2668, #2580) or after 59-89 days (#2711, #2716, #2710). So I set a 30-day wait before a single nudge, and no nudge at all on a draft or after a maintainer says they won't look at it. On PR #2800 the monitor's state said `FEEDBACK-IN`, but the only comment was CodeRabbit's bot summary. My Response rule 2 (a bot summary isn't review feedback) made it draft "No reply" and a note to wait for matthewfeickert. That note was wrong: he'd already said no on #1250 that morning, and the monitor reads only the PR thread ("I can't see #1250 from this report"). I didn't follow the draft. I followed my Walk-away criteria and closed the PR myself, and I'd add reading the linked issue's comments to the monitor so the decision wouldn't be missed.
 
 ---
 
@@ -256,6 +255,14 @@ I re-ran the Testing commands in my own terminal and updated the AI-use line to 
 
 Rebased the branch onto upstream `main` at `a19e98a3`, as CONTRIBUTING.md step 6 asks. It was clean, and the diff is still `3 files changed, 98 insertions(+)`. Upstream had raised some dependency lower bounds, but my installed scipy 1.18.1, numpy 2.5.5 and iminuit 2.33.0 are all above them, and ruff is still pinned at v0.17.3, so the manifest didn't change. The re-run gave the same output as before the rebase. I also added a `## Deviations` section to `plan.md`, which pr-precheck had flagged as missing, and wrote out the two `python -c "..."` commands in full in `pr_draft.md`, which was its last voice note. The next ship-gate run rejected the branch: "Diff stat lists 15 files; 12 (e.g. pyproject.toml, .github/workflows/ci.yml, noxfile.py) are not named by the plan". The gate compares against my local `main`, which I hadn't updated, so upstream's two commits looked like part of my PR. `git fetch upstream main:main` moved local `main` to `a19e98a3`, and `git diff --stat main...HEAD` went back to `3 files changed, 98 insertions(+)`.
 
+**2026-11-17 (PR opened and answered)**
+
+Opened draft PR #2800 at 05:44 UTC through Claude Code. Both hooks passed it, and all six CI checks passed (semantic PR title, CodeFactor, CodeRabbit, Read the Docs, pre-commit.ci). At 07:21 UTC matthewfeickert answered my question on #1250: the walkthrough "as you have implemented it" isn't what he wants, the issue isn't on the roadmap, and the maintainers won't engage further for now. He also asked me to pass on his concern about contributions assigned as coursework. I decided not to rework the PR or argue the decision, and to close it myself.
+
+**2026-11-17 (PR monitor)**
+
+Installed the PR monitor and wrote my playbook. For the staleness rule I measured six recent merged outside PRs: first responses came within a day or after 59-89 days. The monitor's full run drafted "No reply" (the only PR comment was a bot) and a note to wait for the maintainer. It couldn't see the issue thread, where the decision had already been made, so I followed my Walk-away criteria instead.
+
 **Toolkit**
 
 - Tool: Claude Code in my pyhf clone (with `CLAUDE.local.md`), which wrote the docstring and the docs subsection from my plan, made the three commits, and ran each check.
@@ -273,10 +280,11 @@ Rebased the branch onto upstream `main` at `a19e98a3`, as CONTRIBUTING.md step 6
 
 **Maintainer Feedback:**
 
-- 2026-11-17: none yet (PR just opened as a draft; my question on #1250 is also still unanswered)
-- [Date]: [how you addressed it]
+- 2026-11-17: matthewfeickert answered on #1250 (not on the PR), about 90 minutes after I opened it. To my walkthrough question he wrote "As you have implemented it in PR #2800, no", said the issue "is not a high priority" and isn't on any project board, and said "we are not going to engage on this further for the foreseeable future", though the PR "could be refactored into something useful". He also asked me to pass on to my course that assigning open source contributions without the maintainers' consent in advance puts a load on them. The only comment on the PR itself is CodeRabbit's automated summary ("No actionable comments were generated").
+- 2026-11-17: my response: @matthewfeickert, thank you for the direct answer, and for the advice on choosing issues where I have relevant experience and working out the goals with maintainers first. I'm closing #2800 so it isn't in your review queue.
+To clarify my position, I chose the issue myself rather than it being a specific issue assigned to me by an instructor. I do apologize for the miscommunication. 
 
-**Status:** Awaiting review (draft PR, opened 2026-11-17)
+**Status:** Closed
 
 **Toolkit**
 
@@ -291,25 +299,28 @@ Rebased the branch onto upstream `main` at `a19e98a3`, as CONTRIBUTING.md step 6
 
 **Technical Skills Gained**
 
-[What you learned technically, named concretely.]
+- **pytest fixtures:** how a parametrized fixture can look up other fixtures by string with `request.getfixturevalue`, why that hides them from `--setup-plan` and tracebacks, and how to trace a failing test ID back to its data with `-k`, `--collect-only` and `--setup-plan`.
+- **Python's `ast` module:** reading a test file's structure without running it, which I used to check all 10 `setup` IDs against their fixtures and to print a module's docstring.
+- **Git on Windows:** files stored as symlinks (mode `120000`, checked with `git ls-files -s`) come out as one-line text files when `core.symlinks=false`, which broke `src/conftest.py`, three patchset fixtures, ruff, and the doctests in my clone.
+- **Rebasing a feature branch onto upstream `main`,** and learning that tools comparing against my local `main` need it fast-forwarded too (`git fetch upstream main:main`).
+- **Reading a project's CI,** such as `ci.yml`, `ci-windows.yml` and `.pre-commit-config.yaml`, to find the checks it actually runs, and writing them so they work in `cmd.exe`, which is how the ship-gate runs them.
 
 **Challenges Overcome**
 
-[What was hard and how you solved it; point at the real events, the
-Toolkit blocks above are full of them.]
+- **Installing pyhf:** `.[xmlio]` alone died on an `iminuit` warning filter, and the conftest needed `jax` even to run one file. `.[all]` fixed both.
+- **A failing test suite on `main`:** CI's own test command gave `21 failed ... 7 errors` on untouched `main` in my clone. I traced every failure to Windows temp paths or git symlinks, moved both files to my manifest's second table with the reasons, and found that pyhf's `ci-windows.yml` already skips `test_scripts.py`.
+- **A one-off test failure:** a ship-gate run stopped on `test_sbottom_regionB_1400_550_60`, which my diff doesn't touch. I re-ran it alone, with the other test that reads the same archive, and in full runs before deciding not to hide it in the second table.
+- **Being honest about AI help:** my voice guard and I caught the same mistake twice, a line saying I ran commands that Claude had run. Both times I re-ran the commands myself and rewrote the line.
 
 **What I'd Do Differently Next Time**
 
-[Reflection on your process.]
+I'd wait for the maintainer's answer before building. My own `CLAUDE.local.md` said to wait, and plan-check flagged that I was breaking that rule. I went ahead because the PR was a draft and easy to drop, and matthewfeickert's "no" came about 90 minutes after I opened it. I'd also pick an issue differently. My scout passed a nearly six-year-old issue on repo activity alone, and the maintainer's advice was to choose issues where I have relevant experience and first work out with the maintainers whether the work is wanted and what it should aim for. A scout check on issue age and on whether the issue is on a project board would have caught that this one wasn't a priority. Finally, I'd ask before contributing as coursework. The maintainer pointed out that the maintainers never agreed to take part in this kind of assignment.
 
 ---
 
 ## Resources Used
 
-[What actually helped, not a reading list. List things this story
-already shows you using: the doc you followed to set the environment
-up, the thread that explained the bug, the person who answered you.
-One real entry beats ten plausible ones.]
-
-- [Link to documentation that helped]
-- [Discussion, issue, or post that helped]
+- pyhf's CONTRIBUTING.md (https://github.com/scikit-hep/pyhf/blob/main/CONTRIBUTING.md): Conventional Commits, draft PRs for multi-commit work, the `docs/contributors.rst` entry, and the test command.
+- pyhf's CI configuration, `.github/workflows/ci.yml` and `.github/workflows/ci-windows.yml` (https://github.com/scikit-hep/pyhf/tree/main/.github/workflows), and `.pre-commit-config.yaml`: the exact pytest arguments and ruff version for my manifest, and evidence that `test_scripts.py` is skipped on Windows upstream too.
+- pyhf's "Developing" page (https://scikit-hep.org/pyhf/development.html), whose "Running with pytest" section is where my docs pointer went.
+- The issue thread, scikit-hep/pyhf#1250 (https://github.com/scikit-hep/pyhf/issues/1250): matthewfeickert's original description of the "hunting down" problem, and his reply to my claim, which was the most useful feedback I got all term on how to choose and approach an issue.
